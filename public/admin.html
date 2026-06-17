@@ -176,10 +176,12 @@
       }
       
       try {
-        currentUser = await api.auth.me();
+        const result = await api.auth.me();
+        currentUser = result.user;
         setUser(currentUser);
         
         if (currentUser.role !== 'admin') {
+          removeToken();
           window.location.href = '/';
           return;
         }
@@ -202,7 +204,8 @@
     }
     
     async function loadCommonData() {
-      departments = await api.common.getDepartments();
+      const result = await api.common.getDepartments();
+      departments = result.departments;
     }
     
     function startNotificationPolling() {
@@ -214,8 +217,8 @@
       try {
         const data = await api.notifications.getUnreadCount();
         const badge = document.getElementById('unread-badge');
-        if (data.count > 0) {
-          badge.textContent = data.count;
+        if (data.unread_count > 0) {
+          badge.textContent = data.unread_count;
           badge.style.display = 'inline-block';
         } else {
           badge.style.display = 'none';
@@ -227,7 +230,8 @@
     
     async function updateOverdueCount() {
       try {
-        const data = await api.admin.getOverdue();
+        const result = await api.admin.getOverdue();
+        const data = result.overdue;
         const badge = document.getElementById('overdue-count');
         if (data.length > 0) {
           badge.textContent = data.length;
@@ -261,10 +265,12 @@
       const content = document.getElementById('content-area');
       
       try {
-        const [stats, hotspots] = await Promise.all([
+        const [statsResult, hotspotsResult] = await Promise.all([
           api.admin.getStats(),
           api.common.getHotspots()
         ]);
+        const stats = statsResult.overview;
+        const hotspots = hotspotsResult.hotspots;
         
         content.innerHTML = `
           <h2 class="page-title">📊 数据概览</h2>
@@ -431,7 +437,8 @@
       const content = document.getElementById('content-area');
       
       try {
-        const complaints = await api.admin.getComplaints();
+        const result = await api.admin.getComplaints();
+        const complaints = result.complaints;
         
         content.innerHTML = `
           <h2 class="page-title">📋 工单管理</h2>
@@ -459,12 +466,12 @@
           </div>
           
           <div id="complaint-list-container">
-            ${renderComplaintCards(complaints.data)}
+            ${renderComplaintCards(complaints)}
           </div>
           
-          ${complaints.pagination && complaints.pagination.total > 0 ? `
+          ${result.pagination && result.pagination.total > 0 ? `
             <div style="text-align:center;margin-top:20px;color:#888;">
-              共 ${complaints.pagination.total} 条记录
+              共 ${result.pagination.total} 条记录
             </div>
           ` : ''}
         `;
@@ -534,10 +541,12 @@
       const content = document.getElementById('content-area');
       
       try {
-        const [overdue, urgent] = await Promise.all([
+        const [overdueResult, urgentResult] = await Promise.all([
           api.admin.getOverdue(),
           api.admin.getUrgent()
         ]);
+        const overdue = overdueResult.overdue;
+        const urgent = urgentResult.urgent;
         
         content.innerHTML = `
           <h2 class="page-title">⏰ 逾期督办</h2>
@@ -607,7 +616,8 @@
       const content = document.getElementById('content-area');
       
       try {
-        const hotspots = await api.common.getHotspots();
+        const result = await api.common.getHotspots();
+        const hotspots = result.hotspots;
         
         content.innerHTML = `
           <h2 class="page-title">🔥 热点问题</h2>
@@ -648,7 +658,8 @@
       const content = document.getElementById('content-area');
       
       try {
-        const stats = await api.admin.getDepartmentStats();
+        const result = await api.admin.getDepartmentStats();
+        const stats = result.departments;
         
         const maxTotal = Math.max(...stats.map(s => s.total_complaints || 0), 1);
         
@@ -711,7 +722,8 @@
       const content = document.getElementById('content-area');
       
       try {
-        const users = await api.admin.getUsers();
+        const result = await api.admin.getUsers();
+        const users = result.users;
         
         content.innerHTML = `
           <h2 class="page-title">👥 用户管理</h2>
@@ -739,7 +751,7 @@
                 </tr>
               </thead>
               <tbody id="user-table-body">
-                ${users.data && users.data.length > 0 ? users.data.map(u => `
+                ${users && users.length > 0 ? users.map(u => `
                   <tr data-role="${u.role}" data-name="${u.real_name}" data-phone="${u.phone}">
                     <td>
                       <div style="display:flex;align-items:center;gap:10px;">
@@ -769,9 +781,9 @@
             </table>
           </div>
           
-          ${users.pagination && users.pagination.total > 0 ? `
+          ${result.pagination && result.pagination.total > 0 ? `
             <div style="text-align:center;margin-top:20px;color:#888;">
-              共 ${users.pagination.total} 个用户
+              共 ${result.pagination.total} 个用户
             </div>
           ` : ''}
         `;
@@ -808,13 +820,29 @@
       const content = document.getElementById('content-area');
       
       try {
-        const complaint = await api.complaints.get(id);
-        
+        const result = await api.complaints.get(id);
+        const complaint = result.complaint;
+        const media = result.media || [];
+        const logs = result.logs || [];
+        const review = result.review;
+
+        complaint.media = media.map(m => ({
+          ...m,
+          url: '/uploads/' + m.file_path,
+          media_type: m.file_type
+        }));
+        complaint.progress_logs = logs.map(l => ({
+          ...l,
+          user_name: l.operator_name
+        }));
+        complaint.assigned_staff_name = complaint.staff_name;
+        complaint.review = review;
+
         let deptUsers = [];
         if (complaint.department_id) {
           try {
-            const users = await api.admin.getUsers({ department_id: complaint.department_id, role: 'staff' });
-            deptUsers = users.data || [];
+            const usersResult = await api.admin.getUsers({ department_id: complaint.department_id, role: 'staff' });
+            deptUsers = usersResult.users || [];
           } catch (e) {
             console.error('Failed to load department users:', e);
           }
@@ -1057,11 +1085,12 @@
     
     async function showNotifications() {
       try {
-        const notifications = await api.notifications.list();
+        const result = await api.notifications.list();
+        const notifications = result.notifications;
         
         const modalId = showModal(`
           <div style="max-height:500px;overflow-y:auto;margin:-10px;">
-            ${notifications.data && notifications.data.length > 0 ? notifications.data.map(n => `
+            ${notifications && notifications.length > 0 ? notifications.map(n => `
               <div class="notification-item ${n.is_read ? '' : 'unread'}" onclick="markNotificationRead(${n.id})">
                 <div class="notification-title">
                   ${!n.is_read ? '<span class="unread-dot"></span>' : ''}${n.title}
@@ -1071,7 +1100,7 @@
               </div>
             `).join('') : '<p style="color:#888;text-align:center;padding:40px;">暂无通知</p>'}
           </div>
-          ${notifications.data && notifications.data.some(n => !n.is_read) ? `
+          ${notifications && notifications.some(n => !n.is_read) ? `
             <div style="margin-top:16px;text-align:right;">
               <button class="btn btn-secondary btn-sm" onclick="markAllNotificationsRead()">全部标记已读</button>
             </div>

@@ -263,17 +263,20 @@
       const content = document.getElementById('dashboard-content');
       
       try {
-        const [stats, hotspots] = await Promise.all([
+        const [statsResult, hotspotsResult] = await Promise.all([
           api.common.getPublicStats(),
           api.common.getHotspots()
         ]);
+        const stats = statsResult.overview;
+        const departmentStats = statsResult.departments;
+        const hotspots = hotspotsResult.hotspots;
         
-        const maxTotal = Math.max(...stats.department_stats.map(s => s.total_complaints || 0), 1);
+        const maxTotal = Math.max(...departmentStats.map(s => s.total_complaints || 0), 1);
         const maxRating = 5;
         
-        const sortedByTotal = [...stats.department_stats].sort((a, b) => (b.total_complaints || 0) - (a.total_complaints || 0));
-        const sortedByRating = [...stats.department_stats].sort((a, b) => (b.avg_rating || 0) - (a.avg_rating || 0));
-        const sortedByEfficiency = [...stats.department_stats].sort((a, b) => (a.avg_processing_days || 999) - (b.avg_processing_days || 999));
+        const sortedByTotal = [...departmentStats].sort((a, b) => (b.total_complaints || 0) - (a.total_complaints || 0));
+        const sortedByRating = [...departmentStats].sort((a, b) => (b.avg_rating || 0) - (a.avg_rating || 0));
+        const sortedByEfficiency = [...departmentStats].sort((a, b) => (a.avg_processing_days || 999) - (b.avg_processing_days || 999));
         
         content.innerHTML = `
           <h2 class="chart-title">📊 平台整体运行数据</h2>

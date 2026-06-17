@@ -416,7 +416,8 @@
       }
       
       try {
-        currentUser = await api.auth.me();
+        const result = await api.auth.me();
+        currentUser = result.user;
         setUser(currentUser);
         
         document.getElementById('user-avatar').textContent = currentUser.real_name.charAt(0);
@@ -440,8 +441,8 @@
         api.common.getAreasTree(),
         api.common.getComplaintTypes()
       ]);
-      areasTree = areas;
-      complaintTypes = types;
+      areasTree = areas.areas;
+      complaintTypes = types.types;
     }
     
     function startNotificationPolling() {
@@ -453,8 +454,8 @@
       try {
         const data = await api.notifications.getUnreadCount();
         const badge = document.getElementById('unread-badge');
-        if (data.count > 0) {
-          badge.textContent = data.count;
+        if (data.unread_count > 0) {
+          badge.textContent = data.unread_count;
           badge.style.display = 'inline-block';
         } else {
           badge.style.display = 'none';
@@ -488,11 +489,14 @@
           api.common.getHotspots()
         ]);
         
+        const complaintList = complaints.complaints || [];
+        const hotspotList = hotspots.hotspots || [];
+        
         const stats = {
           total: complaints.pagination?.total || 0,
-          processing: complaints.data?.filter(c => c.status === 'processing').length || 0,
-          resolved: complaints.data?.filter(c => c.status === 'resolved').length || 0,
-          pending: complaints.data?.filter(c => c.status === 'pending' || c.status === 'assigned').length || 0
+          processing: complaintList.filter(c => c.status === 'processing').length || 0,
+          resolved: complaintList.filter(c => c.status === 'resolved').length || 0,
+          pending: complaintList.filter(c => c.status === 'pending' || c.status === 'assigned').length || 0
         };
         
         content.innerHTML = `
@@ -520,7 +524,7 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
             <div>
               <h3 style="margin-bottom:16px;color:#333;">📋 最新诉求</h3>
-              ${complaints.data?.slice(0, 5).map(c => `
+              ${complaintList.length > 0 ? complaintList.slice(0, 5).map(c => `
                 <div class="complaint-card" onclick="viewComplaintDetail(${c.id})">
                   <div class="complaint-header">
                     <div>
@@ -535,12 +539,12 @@
                     <span>${c.department_name || '待分派'}</span>
                   </div>
                 </div>
-              `).join('') || '<p style="color:#888;text-align:center;padding:40px;">暂无诉求记录</p>'}
+              `).join('') : '<p style="color:#888;text-align:center;padding:40px;">暂无诉求记录</p>'}
             </div>
             
             <div>
               <h3 style="margin-bottom:16px;color:#333;">🔥 热点问题</h3>
-              ${hotspots.length > 0 ? hotspots.slice(0, 5).map(h => `
+              ${hotspotList.length > 0 ? hotspotList.slice(0, 5).map(h => `
                 <div class="hotspot-card">
                   <div style="display:flex;justify-content:space-between;align-items:center;">
                     <div class="hotspot-title">${h.type_name}</div>
@@ -657,17 +661,18 @@
       
       try {
         const result = await api.complaints.analyze(description);
+        const analysis = result.analysis;
         const analyzeDiv = document.getElementById('analyze-result');
         analyzeDiv.style.display = 'block';
         analyzeDiv.innerHTML = `
           <strong>🔍 智能分析结果：</strong>
-          <p style="margin-top:8px;">建议类型：<strong>${result.suggested_type}</strong></p>
-          <p>建议分派部门：<strong>${result.suggested_department}</strong></p>
-          <p style="font-size:12px;color:#666;margin-top:4px;">匹配关键词：${result.matched_keywords.join(', ') || '无'}</p>
+          <p style="margin-top:8px;">建议类型：<strong>${analysis.suggested_type}</strong></p>
+          <p>建议分派部门：<strong>${analysis.suggested_department}</strong></p>
+          <p style="font-size:12px;color:#666;margin-top:4px;">匹配关键词：${analysis.matched_keywords.join(', ') || '无'}</p>
         `;
         
-        if (result.suggested_type_id) {
-          document.getElementById('complaint-type').value = result.suggested_type_id;
+        if (analysis.suggested_type_id) {
+          document.getElementById('complaint-type').value = analysis.suggested_type_id;
         }
       } catch (err) {
         showAlert(err.message, 'error');
@@ -790,7 +795,7 @@
         showAlert('诉求提交成功！', 'success');
         
         setTimeout(() => {
-          viewComplaintDetail(result.id);
+          viewComplaintDetail(result.complaint.id);
         }, 1000);
       } catch (err) {
         showAlert(err.message, 'error');
@@ -803,6 +808,7 @@
       
       try {
         const complaints = await api.complaints.list();
+        const complaintList = complaints.complaints || [];
         
         content.innerHTML = `
           <h2 class="page-title">📋 我的诉求</h2>
@@ -826,7 +832,7 @@
           </div>
           
           <div id="complaint-list-container">
-            ${renderComplaintCards(complaints.data)}
+            ${renderComplaintCards(complaintList)}
           </div>
           
           ${complaints.pagination && complaints.pagination.total > 0 ? `
@@ -887,7 +893,23 @@
       const content = document.getElementById('content-area');
       
       try {
-        const complaint = await api.complaints.get(id);
+        const result = await api.complaints.get(id);
+        const complaint = result.complaint;
+        const media = result.media || [];
+        const logs = result.logs || [];
+        const review = result.review;
+        
+        complaint.media = media.map(m => ({
+          ...m,
+          url: '/uploads/' + m.file_path,
+          media_type: m.file_type
+        }));
+        complaint.progress_logs = logs.map(l => ({
+          ...l,
+          user_name: l.operator_name
+        }));
+        complaint.assigned_staff_name = complaint.staff_name;
+        complaint.review = review;
         
         content.innerHTML = `
           <button class="btn btn-secondary btn-sm" style="margin-bottom:20px;" onclick="renderComplaintList()">← 返回列表</button>
@@ -1097,7 +1119,8 @@
       const content = document.getElementById('content-area');
       
       try {
-        const hotspots = await api.common.getHotspots();
+        const result = await api.common.getHotspots();
+        const hotspots = result.hotspots || [];
         
         content.innerHTML = `
           <h2 class="page-title">🔥 热点问题</h2>
@@ -1133,11 +1156,12 @@
     
     async function showNotifications() {
       try {
-        const notifications = await api.notifications.list();
+        const result = await api.notifications.list();
+        const notifications = result.notifications || [];
         
         const modalId = showModal(`
           <div style="max-height:500px;overflow-y:auto;margin:-10px;">
-            ${notifications.data && notifications.data.length > 0 ? notifications.data.map(n => `
+            ${notifications.length > 0 ? notifications.map(n => `
               <div class="notification-item ${n.is_read ? '' : 'unread'}" onclick="markNotificationRead(${n.id})">
                 <div class="notification-title">
                   ${!n.is_read ? '<span class="unread-dot"></span>' : ''}${n.title}
@@ -1147,7 +1171,7 @@
               </div>
             `).join('') : '<p style="color:#888;text-align:center;padding:40px;">暂无通知</p>'}
           </div>
-          ${notifications.data && notifications.data.some(n => !n.is_read) ? `
+          ${notifications.some(n => !n.is_read) ? `
             <div style="margin-top:16px;text-align:right;">
               <button class="btn btn-secondary btn-sm" onclick="markAllNotificationsRead()">全部标记已读</button>
             </div>

@@ -143,7 +143,8 @@
       }
       
       try {
-        currentUser = await api.auth.me();
+        const result = await api.auth.me();
+        currentUser = result.user;
         setUser(currentUser);
         
         document.getElementById('user-avatar').textContent = currentUser.real_name.charAt(0);
@@ -172,8 +173,8 @@
       try {
         const data = await api.notifications.getUnreadCount();
         const badge = document.getElementById('unread-badge');
-        if (data.count > 0) {
-          badge.textContent = data.count;
+        if (data.unread_count > 0) {
+          badge.textContent = data.unread_count;
           badge.style.display = 'inline-block';
         } else {
           badge.style.display = 'none';
@@ -185,10 +186,10 @@
     
     async function updatePendingCount() {
       try {
-        const complaints = await api.complaints.list({ status: 'assigned', limit: 1 });
+        const result = await api.complaints.list({ status: 'pending', limit: 1 });
         const badge = document.getElementById('pending-count');
-        if (complaints.pagination?.total > 0) {
-          badge.textContent = complaints.pagination.total;
+        if (result.pagination?.total > 0) {
+          badge.textContent = result.pagination.total;
           badge.style.display = 'inline-block';
         } else {
           badge.style.display = 'none';
@@ -206,7 +207,7 @@
       
       switch(page) {
         case 'home': renderHome(); break;
-        case 'pending': renderComplaintList('assigned'); break;
+        case 'pending': renderComplaintList('pending'); break;
         case 'my': renderComplaintList('my'); break;
         case 'all': renderComplaintList('all'); break;
       }
@@ -217,21 +218,23 @@
       const content = document.getElementById('content-area');
       
       try {
-        const [assigned, my, all] = await Promise.all([
-          api.complaints.list({ status: 'assigned', limit: 5 }),
-          api.complaints.list({ status: 'processing', limit: 5 }),
+        const [pending, all] = await Promise.all([
+          api.complaints.list({ status: 'pending', limit: 5 }),
           api.complaints.list({ limit: 100 })
         ]);
         
+        const allComplaints = all.complaints || [];
+        const myComplaints = allComplaints.filter(c => c.staff_id === currentUser.id);
+        
         const stats = {
-          pending: assigned.pagination?.total || 0,
-          processing: my.pagination?.total || 0,
-          resolved: all.data?.filter(c => c.status === 'resolved').length || 0,
+          pending: pending.pagination?.total || 0,
+          processing: myComplaints.filter(c => ['assigned', 'processing'].includes(c.status)).length,
+          resolved: myComplaints.filter(c => c.status === 'resolved').length,
           total: all.pagination?.total || 0
         };
         
-        const pendingList = assigned.data || [];
-        const processingList = my.data || [];
+        const pendingList = pending.complaints || [];
+        const processingList = myComplaints.filter(c => ['assigned', 'processing'].includes(c.status)).slice(0, 5);
         
         content.innerHTML = `
           <h2 class="page-title">🏠 工作台</h2>
@@ -328,8 +331,8 @@
         let title = '';
         
         switch(filter) {
-          case 'assigned':
-            params.status = 'assigned';
+          case 'pending':
+            params.status = 'pending';
             title = '📥 待认领工单';
             break;
           case 'my':
@@ -340,7 +343,12 @@
             break;
         }
         
-        const complaints = await api.complaints.list(params);
+        const result = await api.complaints.list(params);
+        let complaintList = result.complaints || [];
+        
+        if (filter === 'my') {
+          complaintList = complaintList.filter(c => c.staff_id === currentUser.id);
+        }
         
         content.innerHTML = `
           <h2 class="page-title">${title}</h2>
@@ -364,12 +372,12 @@
           </div>
           
           <div id="complaint-list-container">
-            ${renderComplaintCards(complaints.data)}
+            ${renderComplaintCards(complaintList)}
           </div>
           
-          ${complaints.pagination && complaints.pagination.total > 0 ? `
+          ${result.pagination && result.pagination.total > 0 ? `
             <div style="text-align:center;margin-top:20px;color:#888;">
-              共 ${complaints.pagination.total} 条记录
+              共 ${result.pagination.total} 条记录
             </div>
           ` : ''}
         `;
@@ -435,12 +443,28 @@
       const content = document.getElementById('content-area');
       
       try {
-        const complaint = await api.complaints.get(id);
+        const result = await api.complaints.get(id);
+        const complaint = result.complaint;
+        const media = result.media || [];
+        const logs = result.logs || [];
+        const review = result.review;
         
-        const isAssignedToMe = complaint.assigned_staff_id === currentUser.id;
-        const canClaim = complaint.status === 'assigned';
-        const canProcess = (complaint.status === 'processing' || complaint.status === 'reviewing') && isAssignedToMe;
-        const canComplete = complaint.status === 'processing' && isAssignedToMe;
+        complaint.media = media.map(m => ({
+          ...m,
+          url: '/uploads/' + m.file_path,
+          media_type: m.file_type
+        }));
+        complaint.progress_logs = logs.map(l => ({
+          ...l,
+          user_name: l.operator_name
+        }));
+        complaint.assigned_staff_name = complaint.staff_name;
+        complaint.review = review;
+        
+        const isAssignedToMe = complaint.staff_id === currentUser.id;
+        const canClaim = complaint.status === 'pending';
+        const canProcess = (['assigned', 'processing', 'reviewing'].includes(complaint.status)) && isAssignedToMe;
+        const canComplete = (['assigned', 'processing'].includes(complaint.status)) && isAssignedToMe;
         
         content.innerHTML = `
           <button class="btn btn-secondary btn-sm" style="margin-bottom:20px;" onclick="history.back()">← 返回</button>
@@ -464,7 +488,7 @@
                 <div class="detail-label">当前状态</div>
                 <div class="detail-value">
                   <span class="badge ${getStatusBadge(complaint.status)}" style="font-size:14px;padding:6px 14px;">${getStatusText(complaint.status)}</span>
-                  <span class="badge ${getUrgencyBadge(complaint.urgency)}" style="font-size:14px;padding:6px 14px;margin-left:8px;">${getUrgencyText(c.urgency)}</span>
+                  <span class="badge ${getUrgencyBadge(complaint.urgency)}" style="font-size:14px;padding:6px 14px;margin-left:8px;">${getUrgencyText(complaint.urgency)}</span>
                   ${isOverdue(complaint.deadline) ? '<span class="badge badge-urgent" style="font-size:14px;padding:6px 14px;margin-left:8px;">已逾期</span>' : ''}
                 </div>
               </div>
@@ -653,11 +677,12 @@
     
     async function showNotifications() {
       try {
-        const notifications = await api.notifications.list();
+        const result = await api.notifications.list();
+        const notifications = result.notifications || [];
         
         const modalId = showModal(`
           <div style="max-height:500px;overflow-y:auto;margin:-10px;">
-            ${notifications.data && notifications.data.length > 0 ? notifications.data.map(n => `
+            ${notifications.length > 0 ? notifications.map(n => `
               <div class="notification-item ${n.is_read ? '' : 'unread'}" onclick="markNotificationRead(${n.id})">
                 <div class="notification-title">
                   ${!n.is_read ? '<span class="unread-dot"></span>' : ''}${n.title}
@@ -667,7 +692,7 @@
               </div>
             `).join('') : '<p style="color:#888;text-align:center;padding:40px;">暂无通知</p>'}
           </div>
-          ${notifications.data && notifications.data.some(n => !n.is_read) ? `
+          ${notifications.some(n => !n.is_read) ? `
             <div style="margin-top:16px;text-align:right;">
               <button class="btn btn-secondary btn-sm" onclick="markAllNotificationsRead()">全部标记已读</button>
             </div>
