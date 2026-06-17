@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>市民中心 - 城市居民意见与投诉受理平台</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .form-select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+    }
+    .form-select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      min-height: 120px;
+      resize: vertical;
+      font-family: inherit;
+    }
+    .form-textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .upload-area {
+      border: 2px dashed #d0d0d0;
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      border-color: #667eea;
+      background: rgba(102, 126, 234, 0.05);
+    }
+    .upload-icon {
+      font-size: 40px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+    .upload-text {
+      color: #666;
+      font-size: 14px;
+    }
+    .upload-hint {
+      color: #999;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .file-list {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+    }
+    .file-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f5f5f5;
+    }
+    .file-item img, .file-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .file-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 24px;
+      height: 24px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .complaint-card {
+      background: #fafafa;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border-left: 4px solid #667eea;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .complaint-card:hover {
+      transform: translateX(4px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .complaint-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .complaint-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .complaint-meta {
+      font-size: 13px;
+      color: #888;
+    }
+    .complaint-desc {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    .complaint-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #888;
+    }
+    .timeline {
+      position: relative;
+      padding-left: 30px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #e0e0e0;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 24px;
+    }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -26px;
+      top: 4px;
+      width: 14px;
+      height: 14px;
+      background: #667eea;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 0 0 2px #667eea;
+    }
+    .timeline-action {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .timeline-time {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    .timeline-remark {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 8px;
+    }
+    .timeline-user {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+    }
+    .detail-section {
+      margin-bottom: 24px;
+    }
+    .detail-label {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    .detail-value {
+      font-size: 15px;
+      color: #333;
+    }
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .media-item {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .media-item img, .media-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .rating-stars {
+      display: flex;
+      gap: 8px;
+      margin: 16px 0;
+    }
+    .star {
+      font-size: 32px;
+      color: #ddd;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .star.active, .star:hover {
+      color: #ffc107;
+      transform: scale(1.1);
+    }
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-bar select, .filter-bar input {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .hotspot-card {
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .hotspot-title {
+      font-weight: 600;
+      color: #d63031;
+      margin-bottom: 8px;
+    }
+    .hotspot-count {
+      font-size: 24px;
+      font-weight: bold;
+      color: #d63031;
+    }
+    .hotspot-desc {
+      color: #666;
+      font-size: 14px;
+    }
+    .notification-item {
+      padding: 16px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .notification-item:hover {
+      background: #f5f5f5;
+    }
+    .notification-item.unread {
+      background: rgba(102, 126, 234, 0.05);
+    }
+    .notification-title {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .notification-content {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .notification-time {
+      font-size: 12px;
+      color: #999;
+    }
+    .unread-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #ff4757;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge-pending { background: #fff3cd; color: #856404; }
+    .badge-assigned { background: #d1ecf1; color: #0c5460; }
+    .badge-processing { background: #cce5ff; color: #004085; }
+    .badge-resolved { background: #d4edda; color: #155724; }
+    .badge-reviewing { background: #f8d7da; color: #721c24; }
+    .badge-cancelled { background: #e2e3e5; color: #383d41; }
+    .badge-normal { background: #e2e3e5; color: #383d41; }
+    .badge-urgent { background: #f8d7da; color: #721c24; }
+    .stat-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+    }
+    .stat-card:nth-child(2) { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .stat-card:nth-child(3) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-card:nth-child(4) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    @media (max-width: 768px) {
+      .main-content { grid-template-columns: 1fr; }
+      .stat-cards { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">🏛️</div>
+        <div class="logo-text">
+          <h1>城市居民意见与投诉受理平台</h1>
+          <p>市民中心</p>
+        </div>
+      </div>
+      <div class="user-info">
+        <div style="position: relative;">
+          <button class="btn btn-secondary" onclick="showNotifications()">
+            🔔 通知
+            <span id="unread-badge" class="badge" style="display:none;margin-left:4px;background:#ff4757;color:white;"></span>
+          </button>
+        </div>
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div>
+          <div style="font-weight:500;" id="user-name">用户</div>
+          <div style="font-size:12px;color:#888;">市民</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="logout()">退出</button>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <div class="sidebar">
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <div class="nav-link active" data-page="home" onclick="switchPage('home')">
+              <span>🏠</span> 首页概览
+            </div>
+          </li>
+          <li class="nav-item">
+            <div class="nav-link" data-page="submit" onclick="switchPage('submit')">
+              <span>📝</span> 提交诉求
+            </div>
+          </li>
+          <li class="nav-item">
+            <div class="nav-link" data-page="list" onclick="switchPage('list')">
+              <span>📋</span> 我的诉求
+            </div>
+          </li>
+          <li class="nav-item">
+            <div class="nav-link" data-page="hotspots" onclick="switchPage('hotspots')">
+              <span>🔥</span> 热点问题
+            </div>
+          </li>
+          <li class="nav-item">
+            <div class="nav-link" data-page="dashboard" onclick="window.open('/dashboard.html','_blank')">
+              <span>📊</span> 公开数据
+            </div>
+          </li>
+        </ul>
+      </div>
+      
+      <div class="content-area" id="content-area">
+      </div>
+    </div>
+  </div>
+  
+  <script src="/js/api.js"></script>
+  <script>
+    let currentUser = null;
+    let selectedFiles = [];
+    let areasTree = [];
+    let complaintTypes = [];
+    let currentRating = 0;
+    
+    async function init() {
+      const token = getToken();
+      if (!token) {
+        window.location.href = '/';
+        return;
+      }
+      
+      try {
+        currentUser = await api.auth.me();
+        setUser(currentUser);
+        
+        document.getElementById('user-avatar').textContent = currentUser.real_name.charAt(0);
+        document.getElementById('user-name').textContent = currentUser.real_name;
+        
+        await loadCommonData();
+        startNotificationPolling();
+        switchPage('home');
+      } catch (err) {
+        if (err.message.includes('401') || err.message.includes('未登录')) {
+          removeToken();
+          window.location.href = '/';
+        } else {
+          showAlert(err.message, 'error');
+        }
+      }
+    }
+    
+    async function loadCommonData() {
+      const [areas, types] = await Promise.all([
+        api.common.getAreasTree(),
+        api.common.getComplaintTypes()
+      ]);
+      areasTree = areas;
+      complaintTypes = types;
+    }
+    
+    function startNotificationPolling() {
+      updateUnreadCount();
+      setInterval(updateUnreadCount, 30000);
+    }
+    
+    async function updateUnreadCount() {
+      try {
+        const data = await api.notifications.getUnreadCount();
+        const badge = document.getElementById('unread-badge');
+        if (data.count > 0) {
+          badge.textContent = data.count;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Failed to update unread count:', err);
+      }
+    }
+    
+    function switchPage(page) {
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+      document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+      
+      switch(page) {
+        case 'home': renderHome(); break;
+        case 'submit': renderSubmitForm(); break;
+        case 'list': renderComplaintList(); break;
+        case 'hotspots': renderHotspots(); break;
+      }
+    }
+    
+    async function renderHome() {
+      showLoading();
+      const content = document.getElementById('content-area');
+      
+      try {
+        const [complaints, hotspots] = await Promise.all([
+          api.complaints.list({ limit: 5 }),
+          api.common.getHotspots()
+        ]);
+        
+        const stats = {
+          total: complaints.pagination?.total || 0,
+          processing: complaints.data?.filter(c => c.status === 'processing').length || 0,
+          resolved: complaints.data?.filter(c => c.status === 'resolved').length || 0,
+          pending: complaints.data?.filter(c => c.status === 'pending' || c.status === 'assigned').length || 0
+        };
+        
+        content.innerHTML = `
+          <h2 class="page-title">🏠 首页概览</h2>
+          
+          <div class="stat-cards">
+            <div class="stat-card">
+              <div class="stat-value">${stats.total}</div>
+              <div class="stat-label">全部诉求</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${stats.pending}</div>
+              <div class="stat-label">待处理</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${stats.processing}</div>
+              <div class="stat-label">处理中</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${stats.resolved}</div>
+              <div class="stat-label">已完成</div>
+            </div>
+          </div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div>
+              <h3 style="margin-bottom:16px;color:#333;">📋 最新诉求</h3>
+              ${complaints.data?.slice(0, 5).map(c => `
+                <div class="complaint-card" onclick="viewComplaintDetail(${c.id})">
+                  <div class="complaint-header">
+                    <div>
+                      <div class="complaint-title">${c.title}</div>
+                      <div class="complaint-meta">${c.type_name} · ${c.area_name}</div>
+                    </div>
+                    <span class="badge ${getStatusBadge(c.status)}">${getStatusText(c.status)}</span>
+                  </div>
+                  <div class="complaint-desc">${c.description.substring(0, 50)}${c.description.length > 50 ? '...' : ''}</div>
+                  <div class="complaint-footer">
+                    <span>${formatDate(c.created_at)}</span>
+                    <span>${c.department_name || '待分派'}</span>
+                  </div>
+                </div>
+              `).join('') || '<p style="color:#888;text-align:center;padding:40px;">暂无诉求记录</p>'}
+            </div>
+            
+            <div>
+              <h3 style="margin-bottom:16px;color:#333;">🔥 热点问题</h3>
+              ${hotspots.length > 0 ? hotspots.slice(0, 5).map(h => `
+                <div class="hotspot-card">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div class="hotspot-title">${h.type_name}</div>
+                    <div class="hotspot-count">${h.complaint_count} 件</div>
+                  </div>
+                  <div class="hotspot-desc">${h.area_name} · 近7天内多人反映</div>
+                </div>
+              `).join('') : '<p style="color:#888;text-align:center;padding:40px;">暂无热点问题</p>'}
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+    
+    function renderSubmitForm() {
+      const content = document.getElementById('content-area');
+      selectedFiles = [];
+      
+      content.innerHTML = `
+        <h2 class="page-title">📝 提交诉求</h2>
+        
+        <div style="max-width:800px;">
+          <div class="form-group">
+            <label class="form-label">诉求标题 <span style="color:#ff4757;">*</span></label>
+            <input type="text" class="form-input" id="complaint-title" placeholder="请简要描述您的问题（10-50字）" maxlength="50">
+          </div>
+          
+          <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+            <div>
+              <label class="form-label">所在区域 <span style="color:#ff4757;">*</span></label>
+              <select class="form-select" id="area-province" onchange="updateCityOptions()">
+                <option value="">请选择区/县</option>
+                ${areasTree.map(a => `<option value="${a.id}">${a.name}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="form-label">街道/乡镇 <span style="color:#ff4757;">*</span></label>
+              <select class="form-select" id="area-city" disabled>
+                <option value="">请先选择区/县</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">事项类型 <span style="color:#ff4757;">*</span></label>
+            <select class="form-select" id="complaint-type">
+              <option value="">请选择事项类型</option>
+              ${complaintTypes.map(t => `<option value="${t.id}">${t.name} - ${t.description}</option>`).join('')}
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">紧急程度</label>
+            <select class="form-select" id="complaint-urgency">
+              <option value="normal">普通</option>
+              <option value="urgent">紧急</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">详细描述 <span style="color:#ff4757;">*</span></label>
+            <textarea class="form-textarea" id="complaint-description" placeholder="请详细描述您遇到的问题，包括时间、地点、具体情况等..."></textarea>
+            <button type="button" class="btn btn-secondary btn-sm" style="margin-top:8px;" onclick="analyzeContent()">🔍 智能分析内容</button>
+            <div id="analyze-result" style="margin-top:8px;padding:12px;background:#e8f5e9;border-radius:8px;display:none;"></div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">上传证据（选填，最多5个文件，单文件不超过50MB）</label>
+            <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+              <input type="file" id="file-input" multiple accept="image/*,video/*" style="display:none;" onchange="handleFileSelect(event)">
+              <div class="upload-icon">📷</div>
+              <div class="upload-text">点击或拖拽文件到此处上传</div>
+              <div class="upload-hint">支持 JPG、PNG、MP4 等格式</div>
+            </div>
+            <div class="file-list" id="file-list"></div>
+          </div>
+          
+          <div style="display:flex;gap:16px;">
+            <button class="btn btn-primary" onclick="submitComplaint()">📤 提交诉求</button>
+            <button class="btn btn-secondary" onclick="switchPage('home')">取消</button>
+          </div>
+        </div>
+      `;
+      
+      setupDragAndDrop();
+    }
+    
+    function updateCityOptions() {
+      const provinceId = document.getElementById('area-province').value;
+      const citySelect = document.getElementById('area-city');
+      
+      if (!provinceId) {
+        citySelect.disabled = true;
+        citySelect.innerHTML = '<option value="">请先选择区/县</option>';
+        return;
+      }
+      
+      const province = areasTree.find(a => a.id == provinceId);
+      if (province && province.children) {
+        citySelect.disabled = false;
+        citySelect.innerHTML = '<option value="">请选择街道/乡镇</option>' +
+          province.children.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      }
+    }
+    
+    async function analyzeContent() {
+      const description = document.getElementById('complaint-description').value.trim();
+      if (!description) {
+        showAlert('请先填写详细描述', 'error');
+        return;
+      }
+      
+      try {
+        const result = await api.complaints.analyze(description);
+        const analyzeDiv = document.getElementById('analyze-result');
+        analyzeDiv.style.display = 'block';
+        analyzeDiv.innerHTML = `
+          <strong>🔍 智能分析结果：</strong>
+          <p style="margin-top:8px;">建议类型：<strong>${result.suggested_type}</strong></p>
+          <p>建议分派部门：<strong>${result.suggested_department}</strong></p>
+          <p style="font-size:12px;color:#666;margin-top:4px;">匹配关键词：${result.matched_keywords.join(', ') || '无'}</p>
+        `;
+        
+        if (result.suggested_type_id) {
+          document.getElementById('complaint-type').value = result.suggested_type_id;
+        }
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+    
+    function setupDragAndDrop() {
+      const uploadArea = document.getElementById('upload-area');
+      
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+      });
+      
+      uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+      });
+      
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+      });
+    }
+    
+    function handleFileSelect(event) {
+      handleFiles(event.target.files);
+    }
+    
+    function handleFiles(files) {
+      if (selectedFiles.length + files.length > 5) {
+        showAlert('最多只能上传5个文件', 'error');
+        return;
+      }
+      
+      for (let file of files) {
+        if (file.size > 50 * 1024 * 1024) {
+          showAlert(`文件 ${file.name} 超过50MB限制`, 'error');
+          continue;
+        }
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+          showAlert(`文件 ${file.name} 格式不支持`, 'error');
+          continue;
+        }
+        selectedFiles.push(file);
+      }
+      
+      renderFileList();
+    }
+    
+    function renderFileList() {
+      const fileList = document.getElementById('file-list');
+      fileList.innerHTML = '';
+      
+      selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            fileItem.innerHTML = `
+              <img src="${e.target.result}" alt="${file.name}">
+              <button class="file-remove" onclick="removeFile(${index})">×</button>
+            `;
+          };
+          reader.readAsDataURL(file);
+        } else {
+          fileItem.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:30px;">🎬</div>
+            <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);color:white;font-size:10px;padding:2px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${file.name}</div>
+            <button class="file-remove" onclick="removeFile(${index})">×</button>
+          `;
+        }
+        
+        fileList.appendChild(fileItem);
+      });
+    }
+    
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      renderFileList();
+    }
+    
+    async function submitComplaint() {
+      const title = document.getElementById('complaint-title').value.trim();
+      const description = document.getElementById('complaint-description').value.trim();
+      const typeId = document.getElementById('complaint-type').value;
+      const areaId = document.getElementById('area-city').value;
+      const urgency = document.getElementById('complaint-urgency').value;
+      
+      if (!title || !description || !typeId || !areaId) {
+        showAlert('请填写所有必填项', 'error');
+        return;
+      }
+      
+      if (title.length < 10) {
+        showAlert('标题至少10个字符', 'error');
+        return;
+      }
+      
+      if (description.length < 20) {
+        showAlert('详细描述至少20个字符', 'error');
+        return;
+      }
+      
+      try {
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('type_id', typeId);
+        formData.append('area_id', areaId);
+        formData.append('urgency', urgency);
+        
+        selectedFiles.forEach((file, index) => {
+          formData.append(`media_${index}`, file);
+        });
+        
+        const result = await api.complaints.create(formData);
+        showAlert('诉求提交成功！', 'success');
+        
+        setTimeout(() => {
+          viewComplaintDetail(result.id);
+        }, 1000);
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+    
+    async function renderComplaintList() {
+      showLoading();
+      const content = document.getElementById('content-area');
+      
+      try {
+        const complaints = await api.complaints.list();
+        
+        content.innerHTML = `
+          <h2 class="page-title">📋 我的诉求</h2>
+          
+          <div class="filter-bar">
+            <select id="filter-status" onchange="filterComplaints()">
+              <option value="">全部状态</option>
+              <option value="pending">待处理</option>
+              <option value="assigned">已分派</option>
+              <option value="processing">处理中</option>
+              <option value="resolved">已完成</option>
+              <option value="reviewing">复查中</option>
+              <option value="cancelled">已取消</option>
+            </select>
+            <select id="filter-urgency" onchange="filterComplaints()">
+              <option value="">全部紧急程度</option>
+              <option value="urgent">紧急</option>
+              <option value="normal">普通</option>
+            </select>
+            <input type="text" id="filter-keyword" placeholder="搜索关键词..." onkeyup="filterComplaints()">
+          </div>
+          
+          <div id="complaint-list-container">
+            ${renderComplaintCards(complaints.data)}
+          </div>
+          
+          ${complaints.pagination && complaints.pagination.total > 0 ? `
+            <div style="text-align:center;margin-top:20px;color:#888;">
+              共 ${complaints.pagination.total} 条记录
+            </div>
+          ` : ''}
+        `;
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+    
+    function renderComplaintCards(complaints) {
+      if (!complaints || complaints.length === 0) {
+        return '<p style="color:#888;text-align:center;padding:60px;">暂无诉求记录</p>';
+      }
+      
+      return complaints.map(c => `
+        <div class="complaint-card" onclick="viewComplaintDetail(${c.id})" data-status="${c.status}" data-urgency="${c.urgency}" data-title="${c.title}">
+          <div class="complaint-header">
+            <div>
+              <div class="complaint-title">${c.title}</div>
+              <div class="complaint-meta">${c.type_name} · ${c.area_name}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span class="badge ${getUrgencyBadge(c.urgency)}">${getUrgencyText(c.urgency)}</span>
+              <span class="badge ${getStatusBadge(c.status)}">${getStatusText(c.status)}</span>
+            </div>
+          </div>
+          <div class="complaint-desc">${c.description.substring(0, 80)}${c.description.length > 80 ? '...' : ''}</div>
+          <div class="complaint-footer">
+            <span>📅 ${formatDate(c.created_at)}</span>
+            <span>🏛️ ${c.department_name || '待分派'}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function filterComplaints() {
+      const status = document.getElementById('filter-status').value;
+      const urgency = document.getElementById('filter-urgency').value;
+      const keyword = document.getElementById('filter-keyword').value.toLowerCase();
+      
+      document.querySelectorAll('.complaint-card').forEach(card => {
+        let show = true;
+        
+        if (status && card.dataset.status !== status) show = false;
+        if (urgency && card.dataset.urgency !== urgency) show = false;
+        if (keyword && !card.dataset.title.toLowerCase().includes(keyword)) show = false;
+        
+        card.style.display = show ? 'block' : 'none';
+      });
+    }
+    
+    async function viewComplaintDetail(id) {
+      showLoading();
+      const content = document.getElementById('content-area');
+      
+      try {
+        const complaint = await api.complaints.get(id);
+        
+        content.innerHTML = `
+          <button class="btn btn-secondary btn-sm" style="margin-bottom:20px;" onclick="renderComplaintList()">← 返回列表</button>
+          
+          <h2 class="page-title">📋 ${complaint.title}</h2>
+          
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+            <div>
+              <div class="detail-section">
+                <div class="detail-label">工单编号</div>
+                <div class="detail-value">#${String(complaint.id).padStart(6, '0')}</div>
+              </div>
+              
+              <div class="detail-section">
+                <div class="detail-label">当前状态</div>
+                <div class="detail-value">
+                  <span class="badge ${getStatusBadge(complaint.status)}" style="font-size:14px;padding:6px 14px;">${getStatusText(complaint.status)}</span>
+                  <span class="badge ${getUrgencyBadge(complaint.urgency)}" style="font-size:14px;padding:6px 14px;margin-left:8px;">${getUrgencyText(complaint.urgency)}</span>
+                </div>
+              </div>
+              
+              <div class="detail-section">
+                <div class="detail-label">详细描述</div>
+                <div class="detail-value" style="background:#f9f9f9;padding:16px;border-radius:8px;line-height:1.8;">${complaint.description}</div>
+              </div>
+              
+              ${complaint.media && complaint.media.length > 0 ? `
+                <div class="detail-section">
+                  <div class="detail-label">证据材料</div>
+                  <div class="media-grid">
+                    ${complaint.media.map(m => `
+                      <div class="media-item" onclick="openMedia('${m.url}')">
+                        ${m.media_type === 'image' ? `<img src="${m.url}" alt="证据">` : `<video src="${m.url}" alt="证据"></video>`}
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+              
+              <div class="detail-section">
+                <div class="detail-label">处理进度</div>
+                <div class="timeline">
+                  ${complaint.progress_logs && complaint.progress_logs.length > 0 ? complaint.progress_logs.map(log => `
+                    <div class="timeline-item">
+                      <div class="timeline-action">${getActionText(log.action)}</div>
+                      <div class="timeline-time">${formatDate(log.created_at)}</div>
+                      ${log.remark ? `<div class="timeline-remark">${log.remark}</div>` : ''}
+                      ${log.user_name ? `<div class="timeline-user">操作人：${log.user_name}</div>` : ''}
+                    </div>
+                  `).join('') : '<p style="color:#888;">暂无处理记录</p>'}
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <div style="background:#f9f9f9;border-radius:12px;padding:20px;margin-bottom:16px;">
+                <div class="detail-label">事项类型</div>
+                <div class="detail-value" style="margin-bottom:12px;">${complaint.type_name}</div>
+                
+                <div class="detail-label">所在区域</div>
+                <div class="detail-value" style="margin-bottom:12px;">${complaint.area_name}</div>
+                
+                <div class="detail-label">处理部门</div>
+                <div class="detail-value" style="margin-bottom:12px;">${complaint.department_name || '待分派'}</div>
+                
+                <div class="detail-label">处理人员</div>
+                <div class="detail-value" style="margin-bottom:12px;">${complaint.assigned_staff_name || '待认领'}</div>
+                
+                <div class="detail-label">提交时间</div>
+                <div class="detail-value" style="margin-bottom:12px;">${formatDate(complaint.created_at)}</div>
+                
+                <div class="detail-label">处理期限</div>
+                <div class="detail-value">${formatDate(complaint.deadline) || '-'}</div>
+              </div>
+              
+              ${complaint.review ? `
+                <div style="background:#fff3cd;border-radius:12px;padding:20px;margin-bottom:16px;">
+                  <div class="detail-label">您的评价</div>
+                  <div class="detail-value" style="margin-bottom:8px;">
+                    ${'⭐'.repeat(complaint.review.rating)}${'☆'.repeat(5 - complaint.review.rating)}
+                  </div>
+                  <div class="detail-value" style="font-size:14px;">${complaint.review.content || '无评价内容'}</div>
+                  <div class="detail-label" style="margin-top:8px;">评价时间</div>
+                  <div class="detail-value">${formatDate(complaint.review.created_at)}</div>
+                </div>
+              ` : ''}
+              
+              <div id="action-buttons">
+                ${getActionButtons(complaint)}
+              </div>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+    
+    function getActionButtons(complaint) {
+      let buttons = '';
+      
+      if (complaint.status === 'resolved' && !complaint.review) {
+        buttons += `<button class="btn btn-success btn-block" style="margin-bottom:12px;" onclick="showReviewModal(${complaint.id})">⭐ 评价处理结果</button>`;
+      }
+      
+      if (complaint.review && complaint.review.rating <= 2 && complaint.status !== 'reviewing' && complaint.status !== 'processing') {
+        buttons += `<button class="btn btn-warning btn-block" style="margin-bottom:12px;" onclick="showRequestReviewModal(${complaint.id})">🔄 申请复查</button>`;
+      }
+      
+      if (complaint.status === 'pending' || complaint.status === 'assigned') {
+        buttons += `<button class="btn btn-danger btn-block" onclick="cancelComplaint(${complaint.id})">❌ 撤销诉求</button>`;
+      }
+      
+      return buttons || '<p style="color:#888;text-align:center;">暂无可用操作</p>';
+    }
+    
+    function showReviewModal(complaintId) {
+      currentRating = 0;
+      const modalId = showModal(`
+        <div>
+          <p style="margin-bottom:16px;color:#666;">请对处理结果进行评分：</p>
+          <div class="rating-stars">
+            ${[1,2,3,4,5].map(i => `<span class="star" data-rating="${i}" onclick="setRating(${i})">★</span>`).join('')}
+          </div>
+          <p style="margin-bottom:8px;color:#666;">评价内容（选填）：</p>
+          <textarea class="form-textarea" id="review-content" placeholder="请输入您的评价..." style="min-height:100px;"></textarea>
+          <div style="margin-top:16px;display:flex;gap:12px;">
+            <button class="btn btn-primary" onclick="submitReview(${complaintId})">提交评价</button>
+            <button class="btn btn-secondary" onclick="closeModal('${modalId}')">取消</button>
+          </div>
+        </div>
+      `, '评价处理结果');
+    }
+    
+    function setRating(rating) {
+      currentRating = rating;
+      document.querySelectorAll('.star').forEach((star, index) => {
+        star.classList.toggle('active', index < rating);
+      });
+    }
+    
+    async function submitReview(complaintId) {
+      if (currentRating === 0) {
+        showAlert('请选择评分', 'error');
+        return;
+      }
+      
+      const content = document.getElementById('review-content').value.trim();
+      
+      try {
+        await api.complaints.review(complaintId, currentRating, content);
+        showAlert('评价提交成功！', 'success');
+        closeModal(document.querySelector('.modal.show').id);
+        viewComplaintDetail(complaintId);
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+    
+    function showRequestReviewModal(complaintId) {
+      const modalId = showModal(`
+        <div>
+          <p style="margin-bottom:16px;color:#666;">请说明申请复查的原因：</p>
+          <textarea class="form-textarea" id="review-reason" placeholder="请详细说明您对处理结果不满意的原因..." style="min-height:120px;"></textarea>
+          <div style="margin-top:16px;display:flex;gap:12px;">
+            <button class="btn btn-warning" onclick="submitRequestReview(${complaintId})">提交申请</button>
+            <button class="btn btn-secondary" onclick="closeModal('${modalId}')">取消</button>
+          </div>
+        </div>
+      `, '申请复查');
+    }
+    
+    async function submitRequestReview(complaintId) {
+      const reason = document.getElementById('review-reason').value.trim();
+      
+      if (!reason) {
+        showAlert('请填写复查原因', 'error');
+        return;
+      }
+      
+      try {
+        await api.complaints.requestReview(complaintId, reason);
+        showAlert('复查申请已提交！', 'success');
+        closeModal(document.querySelector('.modal.show').id);
+        viewComplaintDetail(complaintId);
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+    
+    async function cancelComplaint(complaintId) {
+      if (!confirm('确定要撤销此诉求吗？撤销后将无法恢复。')) {
+        return;
+      }
+      
+      try {
+        await api.complaints.cancel(complaintId);
+        showAlert('诉求已撤销', 'success');
+        renderComplaintList();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+    
+    async function renderHotspots() {
+      showLoading();
+      const content = document.getElementById('content-area');
+      
+      try {
+        const hotspots = await api.common.getHotspots();
+        
+        content.innerHTML = `
+          <h2 class="page-title">🔥 热点问题</h2>
+          <p style="color:#888;margin-bottom:20px;">以下为近7天内同一区域多人反映的同类问题，相关部门正在集中处理</p>
+          
+          ${hotspots.length > 0 ? `
+            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(350px, 1fr));gap:20px;">
+              ${hotspots.map(h => `
+                <div class="hotspot-card">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                    <div>
+                      <div class="hotspot-title">🔥 ${h.type_name}</div>
+                      <div class="hotspot-desc">📍 ${h.area_name}</div>
+                    </div>
+                    <div class="hotspot-count">${h.complaint_count} 件</div>
+                  </div>
+                  <div style="font-size:13px;color:#666;line-height:1.6;">
+                    近7天内已有 <strong>${h.complaint_count}</strong> 位市民反映此类问题。
+                    ${h.latest_complaint ? `最新诉求：${formatDate(h.latest_complaint)}` : ''}
+                  </div>
+                  <button class="btn btn-secondary btn-sm" style="margin-top:12px;" onclick="switchPage('submit')">
+                    📝 我也要反映此类问题
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          ` : '<p style="color:#888;text-align:center;padding:60px;">暂无热点问题</p>'}
+        `;
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+    
+    async function showNotifications() {
+      try {
+        const notifications = await api.notifications.list();
+        
+        const modalId = showModal(`
+          <div style="max-height:500px;overflow-y:auto;margin:-10px;">
+            ${notifications.data && notifications.data.length > 0 ? notifications.data.map(n => `
+              <div class="notification-item ${n.is_read ? '' : 'unread'}" onclick="markNotificationRead(${n.id})">
+                <div class="notification-title">
+                  ${!n.is_read ? '<span class="unread-dot"></span>' : ''}${n.title}
+                </div>
+                <div class="notification-content">${n.content}</div>
+                <div class="notification-time">${formatDate(n.created_at)}</div>
+              </div>
+            `).join('') : '<p style="color:#888;text-align:center;padding:40px;">暂无通知</p>'}
+          </div>
+          ${notifications.data && notifications.data.some(n => !n.is_read) ? `
+            <div style="margin-top:16px;text-align:right;">
+              <button class="btn btn-secondary btn-sm" onclick="markAllNotificationsRead()">全部标记已读</button>
+            </div>
+          ` : ''}
+        `, '通知中心');
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+    
+    async function markNotificationRead(id) {
+      try {
+        await api.notifications.markRead(id);
+        updateUnreadCount();
+      } catch (err) {
+        console.error('Failed to mark notification read:', err);
+      }
+    }
+    
+    async function markAllNotificationsRead() {
+      try {
+        await api.notifications.markAllRead();
+        updateUnreadCount();
+        closeModal(document.querySelector('.modal.show').id);
+        showAlert('已全部标记为已读', 'success');
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+    
+    function openMedia(url) {
+      window.open(url, '_blank');
+    }
+    
+    init();
+  </script>
+</body>
+</html>

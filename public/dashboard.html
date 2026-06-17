@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>公开数据看板 - 城市居民意见与投诉受理平台</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .public-header {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 20px 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .public-content {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      min-height: 600px;
+    }
+    .stat-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 24px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .stat-card:nth-child(2) { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .stat-card:nth-child(3) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-card:nth-child(4) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .stat-value {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.95;
+    }
+    .chart-container {
+      background: #f9f9f9;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .chart-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .chart-title::before {
+      content: '';
+      width: 4px;
+      height: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px;
+    }
+    .chart-bar {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+    .chart-bar-label {
+      width: 140px;
+      font-size: 14px;
+      color: #555;
+      flex-shrink: 0;
+      font-weight: 500;
+    }
+    .chart-bar-track {
+      flex: 1;
+      height: 32px;
+      background: #e8e8e8;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+    .chart-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 12px;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      transition: width 0.8s ease;
+    }
+    .chart-bar-fill.green { background: linear-gradient(90deg, #11998e, #38ef7d); }
+    .chart-bar-fill.orange { background: linear-gradient(90deg, #f093fb, #f5576c); }
+    .chart-bar-fill.red { background: linear-gradient(90deg, #eb3349, #f45c43); }
+    .chart-bar-fill.yellow { background: linear-gradient(90deg, #f5af19, #f12711); }
+    .chart-bar-value {
+      width: 80px;
+      text-align: right;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+    .dept-ranking {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 16px;
+    }
+    .dept-card {
+      background: white;
+      border: 1px solid #e8e8e8;
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+    .dept-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .dept-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    .dept-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+    .dept-rank {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .dept-rank.gold { background: linear-gradient(135deg, #f5af19 0%, #f12711 100%); }
+    .dept-rank.silver { background: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%); }
+    .dept-rank.bronze { background: linear-gradient(135deg, #d4a574 0%, #8b4513 100%); }
+    .dept-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .dept-metric {
+      text-align: center;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    .dept-metric-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .dept-metric-value.green { color: #28a745; }
+    .dept-metric-value.orange { color: #fd7e14; }
+    .dept-metric-value.red { color: #dc3545; }
+    .dept-metric-label {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+    }
+    .stars {
+      color: #ffc107;
+      font-size: 16px;
+      letter-spacing: 2px;
+    }
+    .trend-up { color: #28a745; }
+    .trend-down { color: #dc3545; }
+    .section-divider {
+      height: 1px;
+      background: #e8e8e8;
+      margin: 32px 0;
+    }
+    .update-time {
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+      margin-top: 20px;
+    }
+    .hotspot-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .hotspot-card {
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .hotspot-title {
+      font-weight: 600;
+      color: #d63031;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+    .hotspot-count {
+      font-size: 28px;
+      font-weight: bold;
+      color: #d63031;
+    }
+    .hotspot-desc {
+      color: #666;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    @media (max-width: 768px) {
+      .stat-cards { grid-template-columns: repeat(2, 1fr); }
+      .chart-bar-label { width: 100px; font-size: 12px; }
+      .dept-ranking { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="public-header">
+      <div class="logo">
+        <div class="logo-icon">🏛️</div>
+        <div class="logo-text">
+          <h1>城市居民意见与投诉受理平台</h1>
+          <p>公开数据看板</p>
+        </div>
+      </div>
+      <div>
+        <a href="/" class="btn btn-primary">🔐 登录系统</a>
+      </div>
+    </div>
+    
+    <div class="public-content" id="dashboard-content">
+      <div style="text-align:center;padding:80px;">
+        <div class="loading"></div>
+        <p style="margin-top:16px;color:#666;">数据加载中...</p>
+      </div>
+    </div>
+    
+    <div class="update-time" id="update-time"></div>
+  </div>
+  
+  <script src="/js/api.js"></script>
+  <script>
+    async function loadDashboard() {
+      const content = document.getElementById('dashboard-content');
+      
+      try {
+        const [stats, hotspots] = await Promise.all([
+          api.common.getPublicStats(),
+          api.common.getHotspots()
+        ]);
+        
+        const maxTotal = Math.max(...stats.department_stats.map(s => s.total_complaints || 0), 1);
+        const maxRating = 5;
+        
+        const sortedByTotal = [...stats.department_stats].sort((a, b) => (b.total_complaints || 0) - (a.total_complaints || 0));
+        const sortedByRating = [...stats.department_stats].sort((a, b) => (b.avg_rating || 0) - (a.avg_rating || 0));
+        const sortedByEfficiency = [...stats.department_stats].sort((a, b) => (a.avg_processing_days || 999) - (b.avg_processing_days || 999));
+        
+        content.innerHTML = `
+          <h2 class="chart-title">📊 平台整体运行数据</h2>
+          
+          <div class="stat-cards">
+            <div class="stat-card">
+              <div class="stat-value">${stats.total_complaints || 0}</div>
+              <div class="stat-label">累计受理诉求</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${stats.resolved_complaints || 0}</div>
+              <div class="stat-label">已完成处理</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${((stats.resolved_complaints || 0) / (stats.total_complaints || 1) * 100).toFixed(1)}%</div>
+              <div class="stat-label">办结率</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${stats.avg_rating ? stats.avg_rating.toFixed(1) : 'N/A'}</div>
+              <div class="stat-label">平均满意度 <span style="font-size:16px;">⭐</span></div>
+            </div>
+          </div>
+          
+          <div class="section-divider"></div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+            <div class="chart-container">
+              <h3 class="chart-title">📈 各部门工单量排行</h3>
+              ${sortedByTotal.slice(0, 8).map((s, index) => `
+                <div class="chart-bar">
+                  <div class="chart-bar-label">${s.department_name}</div>
+                  <div class="chart-bar-track">
+                    <div class="chart-bar-fill" style="width: ${((s.total_complaints || 0) / maxTotal * 100).toFixed(0)}%">
+                      ${s.total_complaints || 0}
+                    </div>
+                  </div>
+                  <div class="chart-bar-value">${s.total_complaints || 0} 件</div>
+                </div>
+              `).join('')}
+            </div>
+            
+            <div class="chart-container">
+              <h3 class="chart-title">⭐ 市民满意度排行</h3>
+              ${sortedByRating.slice(0, 8).map((s, index) => `
+                <div class="chart-bar">
+                  <div class="chart-bar-label">${s.department_name}</div>
+                  <div class="chart-bar-track">
+                    <div class="chart-bar-fill green" style="width: ${((s.avg_rating || 0) / maxRating * 100).toFixed(0)}%">
+                      ${s.avg_rating ? s.avg_rating.toFixed(1) : 'N/A'}
+                    </div>
+                  </div>
+                  <div class="chart-bar-value">
+                    <span class="stars">${'★'.repeat(Math.round(s.avg_rating || 0))}${'☆'.repeat(5 - Math.round(s.avg_rating || 0))}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <div class="section-divider"></div>
+          
+          <div class="chart-container">
+            <h3 class="chart-title">⚡ 处理效率排行（平均处理天数）</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+              ${sortedByEfficiency.slice(0, 8).map((s, index) => `
+                <div class="chart-bar">
+                  <div class="chart-bar-label">${s.department_name}</div>
+                  <div class="chart-bar-track">
+                    <div class="chart-bar-fill ${(s.avg_processing_days || 0) <= 3 ? 'green' : (s.avg_processing_days || 0) <= 7 ? 'yellow' : 'red'}" 
+                         style="width: ${Math.min(100, ((s.avg_processing_days || 0) / 15 * 100)).toFixed(0)}%">
+                      ${s.avg_processing_days || 0} 天
+                    </div>
+                  </div>
+                  <div class="chart-bar-value">${s.avg_processing_days || 0} 天</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <div class="section-divider"></div>
+          
+          <h2 class="chart-title">🏛️ 各部门详细数据</h2>
+          <div class="dept-ranking">
+            ${sortedByRating.map((s, index) => `
+              <div class="dept-card">
+                <div class="dept-header">
+                  <div class="dept-name">${s.department_name}</div>
+                  <div class="dept-rank ${index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : ''}">${index + 1}</div>
+                </div>
+                <div class="dept-metrics">
+                  <div class="dept-metric">
+                    <div class="dept-metric-value">${s.total_complaints || 0}</div>
+                    <div class="dept-metric-label">总工单</div>
+                  </div>
+                  <div class="dept-metric">
+                    <div class="dept-metric-value green">${s.resolved_complaints || 0}</div>
+                    <div class="dept-metric-label">已完成</div>
+                  </div>
+                  <div class="dept-metric">
+                    <div class="dept-metric-value orange">${s.avg_processing_days || 0}</div>
+                    <div class="dept-metric-label">平均天数</div>
+                  </div>
+                  <div class="dept-metric">
+                    <div class="dept-metric-value ${(s.avg_rating || 0) >= 4 ? 'green' : (s.avg_rating || 0) >= 3 ? 'orange' : 'red'}">
+                      ${s.avg_rating ? s.avg_rating.toFixed(1) : 'N/A'}
+                    </div>
+                    <div class="dept-metric-label">
+                      <span class="stars">${'★'.repeat(Math.round(s.avg_rating || 0))}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          
+          ${hotspots.length > 0 ? `
+            <div class="section-divider"></div>
+            <h2 class="chart-title">🔥 当前热点问题</h2>
+            <p style="color:#888;margin-bottom:16px;">以下为近7天内同一区域多人反映的同类问题，相关部门正在集中处理</p>
+            <div class="hotspot-section">
+              ${hotspots.slice(0, 6).map(h => `
+                <div class="hotspot-card">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div>
+                      <div class="hotspot-title">🔥 ${h.type_name}</div>
+                      <div class="hotspot-desc">📍 ${h.area_name}</div>
+                    </div>
+                    <div class="hotspot-count">${h.complaint_count}</div>
+                  </div>
+                  <div style="font-size:13px;color:#666;margin-top:12px;">
+                    近7天已有 <strong>${h.complaint_count}</strong> 位市民反映此类问题
+                    ${h.latest_complaint ? `<br>最新诉求：${formatDate(h.latest_complaint)}` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        `;
+        
+        document.getElementById('update-time').textContent = `数据更新时间：${new Date().toLocaleString('zh-CN')}`;
+        
+      } catch (err) {
+        content.innerHTML = `
+          <div style="text-align:center;padding:80px;color:#dc3545;">
+            <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+            <h3>数据加载失败</h3>
+            <p style="color:#666;margin-top:8px;">${err.message}</p>
+            <button class="btn btn-primary" style="margin-top:16px;" onclick="loadDashboard()">重新加载</button>
+          </div>
+        `;
+      }
+    }
+    
+    loadDashboard();
+    setInterval(loadDashboard, 300000);
+  </script>
+</body>
+</html>
