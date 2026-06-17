@@ -267,35 +267,40 @@
           api.common.getPublicStats(),
           api.common.getHotspots()
         ]);
-        const stats = statsResult.overview;
-        const departmentStats = statsResult.departments;
-        const hotspots = hotspotsResult.hotspots;
+        const stats = statsResult.overview || {};
+        const departmentStats = statsResult.departments || [];
+        const hotspots = hotspotsResult.hotspots || [];
         
-        const maxTotal = Math.max(...departmentStats.map(s => s.total_complaints || 0), 1);
+        const totalCount = stats.total || 0;
+        const resolvedCount = stats.resolved || 0;
+        const resolutionRate = stats.resolutionRate || 0;
+        const avgRating = stats.avgRating || 0;
+        
+        const maxTotal = Math.max(...departmentStats.map(s => s.total || 0), 1);
         const maxRating = 5;
         
-        const sortedByTotal = [...departmentStats].sort((a, b) => (b.total_complaints || 0) - (a.total_complaints || 0));
+        const sortedByTotal = [...departmentStats].sort((a, b) => (b.total || 0) - (a.total || 0));
         const sortedByRating = [...departmentStats].sort((a, b) => (b.avg_rating || 0) - (a.avg_rating || 0));
-        const sortedByEfficiency = [...departmentStats].sort((a, b) => (a.avg_processing_days || 999) - (b.avg_processing_days || 999));
+        const sortedByEfficiency = [...departmentStats].sort((a, b) => (a.avg_resolve_days || 999) - (b.avg_resolve_days || 999));
         
         content.innerHTML = `
           <h2 class="chart-title">📊 平台整体运行数据</h2>
           
           <div class="stat-cards">
             <div class="stat-card">
-              <div class="stat-value">${stats.total_complaints || 0}</div>
+              <div class="stat-value">${totalCount}</div>
               <div class="stat-label">累计受理诉求</div>
             </div>
             <div class="stat-card">
-              <div class="stat-value">${stats.resolved_complaints || 0}</div>
+              <div class="stat-value">${resolvedCount}</div>
               <div class="stat-label">已完成处理</div>
             </div>
             <div class="stat-card">
-              <div class="stat-value">${((stats.resolved_complaints || 0) / (stats.total_complaints || 1) * 100).toFixed(1)}%</div>
+              <div class="stat-value">${resolutionRate}%</div>
               <div class="stat-label">办结率</div>
             </div>
             <div class="stat-card">
-              <div class="stat-value">${stats.avg_rating ? stats.avg_rating.toFixed(1) : 'N/A'}</div>
+              <div class="stat-value">${Number(avgRating).toFixed(1)}</div>
               <div class="stat-label">平均满意度 <span style="font-size:16px;">⭐</span></div>
             </div>
           </div>
@@ -307,13 +312,13 @@
               <h3 class="chart-title">📈 各部门工单量排行</h3>
               ${sortedByTotal.slice(0, 8).map((s, index) => `
                 <div class="chart-bar">
-                  <div class="chart-bar-label">${s.department_name}</div>
+                  <div class="chart-bar-label">${s.name}</div>
                   <div class="chart-bar-track">
-                    <div class="chart-bar-fill" style="width: ${((s.total_complaints || 0) / maxTotal * 100).toFixed(0)}%">
-                      ${s.total_complaints || 0}
+                    <div class="chart-bar-fill" style="width: ${((s.total || 0) / maxTotal * 100).toFixed(0)}%">
+                      ${s.total || 0}
                     </div>
                   </div>
-                  <div class="chart-bar-value">${s.total_complaints || 0} 件</div>
+                  <div class="chart-bar-value">${s.total || 0} 件</div>
                 </div>
               `).join('')}
             </div>
@@ -322,10 +327,10 @@
               <h3 class="chart-title">⭐ 市民满意度排行</h3>
               ${sortedByRating.slice(0, 8).map((s, index) => `
                 <div class="chart-bar">
-                  <div class="chart-bar-label">${s.department_name}</div>
+                  <div class="chart-bar-label">${s.name}</div>
                   <div class="chart-bar-track">
                     <div class="chart-bar-fill green" style="width: ${((s.avg_rating || 0) / maxRating * 100).toFixed(0)}%">
-                      ${s.avg_rating ? s.avg_rating.toFixed(1) : 'N/A'}
+                      ${Number(s.avg_rating || 0).toFixed(1)}
                     </div>
                   </div>
                   <div class="chart-bar-value">
@@ -343,14 +348,14 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
               ${sortedByEfficiency.slice(0, 8).map((s, index) => `
                 <div class="chart-bar">
-                  <div class="chart-bar-label">${s.department_name}</div>
+                  <div class="chart-bar-label">${s.name}</div>
                   <div class="chart-bar-track">
-                    <div class="chart-bar-fill ${(s.avg_processing_days || 0) <= 3 ? 'green' : (s.avg_processing_days || 0) <= 7 ? 'yellow' : 'red'}" 
-                         style="width: ${Math.min(100, ((s.avg_processing_days || 0) / 15 * 100)).toFixed(0)}%">
-                      ${s.avg_processing_days || 0} 天
+                    <div class="chart-bar-fill ${(s.avg_resolve_days || 0) <= 3 ? 'green' : (s.avg_resolve_days || 0) <= 7 ? 'yellow' : 'red'}" 
+                         style="width: ${Math.min(100, ((s.avg_resolve_days || 0) / 15 * 100)).toFixed(0)}%">
+                      ${s.avg_resolve_days || 0} 天
                     </div>
                   </div>
-                  <div class="chart-bar-value">${s.avg_processing_days || 0} 天</div>
+                  <div class="chart-bar-value">${s.avg_resolve_days || 0} 天</div>
                 </div>
               `).join('')}
             </div>
@@ -363,25 +368,25 @@
             ${sortedByRating.map((s, index) => `
               <div class="dept-card">
                 <div class="dept-header">
-                  <div class="dept-name">${s.department_name}</div>
+                  <div class="dept-name">${s.name}</div>
                   <div class="dept-rank ${index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : ''}">${index + 1}</div>
                 </div>
                 <div class="dept-metrics">
                   <div class="dept-metric">
-                    <div class="dept-metric-value">${s.total_complaints || 0}</div>
+                    <div class="dept-metric-value">${s.total || 0}</div>
                     <div class="dept-metric-label">总工单</div>
                   </div>
                   <div class="dept-metric">
-                    <div class="dept-metric-value green">${s.resolved_complaints || 0}</div>
+                    <div class="dept-metric-value green">${s.resolved || 0}</div>
                     <div class="dept-metric-label">已完成</div>
                   </div>
                   <div class="dept-metric">
-                    <div class="dept-metric-value orange">${s.avg_processing_days || 0}</div>
+                    <div class="dept-metric-value orange">${s.avg_resolve_days || 0}</div>
                     <div class="dept-metric-label">平均天数</div>
                   </div>
                   <div class="dept-metric">
                     <div class="dept-metric-value ${(s.avg_rating || 0) >= 4 ? 'green' : (s.avg_rating || 0) >= 3 ? 'orange' : 'red'}">
-                      ${s.avg_rating ? s.avg_rating.toFixed(1) : 'N/A'}
+                      ${Number(s.avg_rating || 0).toFixed(1)}
                     </div>
                     <div class="dept-metric-label">
                       <span class="stars">${'★'.repeat(Math.round(s.avg_rating || 0))}</span>
@@ -408,7 +413,7 @@
                   </div>
                   <div style="font-size:13px;color:#666;margin-top:12px;">
                     近7天已有 <strong>${h.complaint_count}</strong> 位市民反映此类问题
-                    ${h.latest_complaint ? `<br>最新诉求：${formatDate(h.latest_complaint)}` : ''}
+                    ${h.latest_complaint ? `<br>最新诉求：${(new Date(h.latest_complaint)).toLocaleString('zh-CN')}` : ''}
                   </div>
                 </div>
               `).join('')}

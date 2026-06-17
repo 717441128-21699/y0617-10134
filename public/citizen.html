@@ -761,7 +761,9 @@
       const title = document.getElementById('complaint-title').value.trim();
       const description = document.getElementById('complaint-description').value.trim();
       const typeId = document.getElementById('complaint-type').value;
-      const areaId = document.getElementById('area-city').value;
+      const districtId = document.getElementById('area-district').value;
+      const streetId = document.getElementById('area-street').value;
+      const areaId = streetId || districtId;
       const urgency = document.getElementById('complaint-urgency').value;
       
       if (!title || !description || !typeId || !areaId) {
@@ -787,12 +789,15 @@
         formData.append('area_id', areaId);
         formData.append('urgency', urgency);
         
-        selectedFiles.forEach((file, index) => {
-          formData.append(`media_${index}`, file);
+        selectedFiles.forEach((file) => {
+          formData.append('media', file);
         });
         
         const result = await api.complaints.create(formData);
         showAlert('诉求提交成功！', 'success');
+        
+        selectedFiles = [];
+        renderFileList();
         
         setTimeout(() => {
           viewComplaintDetail(result.complaint.id);
